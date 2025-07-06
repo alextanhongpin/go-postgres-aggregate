@@ -26,6 +26,8 @@ func main() {
 		panicIfErr(root.Increment(2))
 		fmt.Println(root.Events)
 	}
+
+	testCounterRoot2()
 }
 
 func panicIfErr(err error) {
