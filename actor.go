@@ -6,36 +6,36 @@ import (
 )
 
 func init() {
-	fmt.Println("Counter Actions Example")
-	actions := NewCounterActions()
+	fmt.Println("Counter Actor Example")
+	actions := NewCounterActor()
 	panicIfErr(actions.Increment(5))
 	panicIfErr(actions.Decrement(2))
 	fmt.Println(actions.Counter.Value) // Should print 3
 	fmt.Println(actions.Events)
 
-	actions2 := CounterActionsFromEvents(actions.Events)
+	actions2 := CounterActorFromEvents(actions.Events)
 	fmt.Println(actions2.Counter.Value) // Should also print 3
-	fmt.Println("Counter Actions Example Completed")
+	fmt.Println("Counter Actor Example Completed")
 }
 
 type CounterAggregate struct {
 	Value int
 }
 
-type CounterActions struct {
+type CounterActor struct {
 	Events  []Event
 	Counter *CounterAggregate
 }
 
-func NewCounterActions() *CounterActions {
-	return &CounterActions{
+func NewCounterActor() *CounterActor {
+	return &CounterActor{
 		Events:  make([]Event, 0),
 		Counter: &CounterAggregate{},
 	}
 }
 
-func CounterActionsFromEvents(events []Event) *CounterActions {
-	actions := NewCounterActions()
+func CounterActorFromEvents(events []Event) *CounterActor {
+	actions := NewCounterActor()
 	for _, event := range events {
 		if err := actions.ApplyEvent(event); err != nil {
 			panic(fmt.Sprintf("failed to apply event: %v", err))
@@ -44,31 +44,15 @@ func CounterActionsFromEvents(events []Event) *CounterActions {
 	return actions
 }
 
-func (c *CounterActions) Increment(n int) error {
-	b, err := json.Marshal(n)
-	if err != nil {
-		return err
-	}
-
-	return c.Raise(Event{
-		Type: "increment",
-		Data: b,
-	})
+func (c *CounterActor) Increment(n int) error {
+	return c.Raise("increment", n)
 }
 
-func (c *CounterActions) Decrement(n int) error {
-	b, err := json.Marshal(n)
-	if err != nil {
-		return err
-	}
-
-	return c.Raise(Event{
-		Type: "decrement",
-		Data: b,
-	})
+func (c *CounterActor) Decrement(n int) error {
+	return c.Raise("decrement", n)
 }
 
-func (c *CounterActions) ApplyEvent(event Event) error {
+func (c *CounterActor) ApplyEvent(event Event) error {
 	switch event.Type {
 	case "increment":
 		var n int
@@ -88,7 +72,15 @@ func (c *CounterActions) ApplyEvent(event Event) error {
 	return nil
 }
 
-func (c *CounterActions) Raise(event Event) error {
+func (c *CounterActor) Raise(name string, data any) error {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	event := Event{
+		Type: name,
+		Data: b,
+	}
 	if err := c.ApplyEvent(event); err != nil {
 		return fmt.Errorf("failed to apply event: %w", err)
 	}
